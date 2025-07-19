@@ -137,3 +137,12 @@ pandas
 numpy
 requests
 streamlit-searchbox
+streamlit==1.32.0
+pandas==2.2.0
+numpy==1.24.3
+scikit-learn==1.4.0
+requests==2.31.0
+Pillow==10.2.0
+fuzzywuzzy==0.18.0
+python-levenshtein==0.25.0
+plotly==5.18.0
