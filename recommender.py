@@ -2,7 +2,8 @@ import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from utils.posters import fetch_poster
+from utils.posters import fetch_poster_url as fetch_poster
+
 
 def get_recommendations(title, data, genre_filter=None, top_n=5):
     # Apply genre filter if selected
