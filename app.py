@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 from recommender import get_recommendations
-from utils.posters import fetch_poster_url
+from utils.posters import fetch_poster
 
 # Load movie data
 data = pd.read_csv("data/tmdb_5000_movies.csv")

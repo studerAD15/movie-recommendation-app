@@ -1,14 +1,19 @@
 import requests
 
-def fetch_poster_url(movie_id, api_key="your_tmdb_api_key_here"):
-    """
-    Fetches the poster URL for a given movie ID from TMDb.
-    """
-    url = f"https://api.themoviedb.org/3/movie/{movie_id}?api_key={api_key}&language=en-US"
-    response = requests.get(url)
-    if response.status_code == 200:
+OMDB_API_KEY = "562c0dc8"
+
+def fetch_poster(title):
+    try:
+        url = f"http://www.omdbapi.com/?t={title}&apikey={OMDB_API_KEY}"
+        response = requests.get(url)
         data = response.json()
-        poster_path = data.get("poster_path")
-        if poster_path:
-            return f"https://image.tmdb.org/t/p/w500{poster_path}"
-    return "https://via.placeholder.com/300x450.png?text=No+Image"
+
+        if response.status_code == 200 and data.get("Response") == "True":
+            poster_url = data.get("Poster")
+            # Ensure the poster URL is valid and not "N/A"
+            if poster_url and poster_url != "N/A":
+                return poster_url
+        return "https://via.placeholder.com/300x450.png?text=No+Image"
+    except Exception as e:
+        print(f"Error fetching poster for '{title}':", e)
+        return "https://via.placeholder.com/300x450.png?text=Error"
