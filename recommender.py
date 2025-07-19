@@ -1,39 +1,44 @@
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+
 from utils.posters import fetch_poster
 
-# Load dataset
-df = pd.read_csv("data/tmdb_5000_movies.csv")
-df = df.dropna(subset=['overview'])
+def get_recommendations(title, data, genre_filter=None, top_n=5):
+    # Apply genre filter if selected
+    if genre_filter and genre_filter != "All":
+        def genre_match(genre_str):
+            try:
+                genres = eval(genre_str.replace("'", '"'))
+                return any(g['name'] == genre_filter for g in genres if 'name' in g)
+            except:
+                return False
 
-# Combine genre into string
-def extract_genres(genres_str):
-    try:
-        genres = eval(genres_str.replace("'", '"'))
-        return " ".join([g['name'] for g in genres])
-    except:
-        return ""
+        filtered_data = data[data['genres'].apply(genre_match)]
+    else:
+        filtered_data = data
 
-df['genres_str'] = df['genres'].apply(extract_genres)
+    # Check if title exists in filtered data
+    if title not in filtered_data['title'].values:
+        return [], []
 
-# TF-IDF on overview
-tfidf = TfidfVectorizer(stop_words='english')
-tfidf_matrix = tfidf.fit_transform(df['overview'])
-similarity = cosine_similarity(tfidf_matrix)
+    # Prepare TF-IDF matrix on 'overview'
+    filtered_data['overview'] = filtered_data['overview'].fillna('')
+    tfidf = TfidfVectorizer(stop_words='english')
+    tfidf_matrix = tfidf.fit_transform(filtered_data['overview'])
 
-def get_recommendations(title, genre_filter=None, top_n=5):
-    if title not in df['title'].values:
-        return []
-    idx = df[df['title'] == title].index[0]
-    sim_scores = list(enumerate(similarity[idx]))
-    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)[1:]
-    results = []
-    for i, score in sim_scores:
-        movie = df.iloc[i]
-        if genre_filter and genre_filter not in movie['genres_str']:
-            continue
-        results.append((movie['title'], fetch_poster(movie['title'])))
-        if len(results) >= top_n:
-            break
-    return results
+    # Compute cosine similarity
+    cosine_sim = cosine_similarity(tfidf_matrix, tfidf_matrix)
+
+    # Get index of selected movie
+    idx = filtered_data[filtered_data['title'] == title].index[0]
+
+    # Get similarity scores and top recommendations
+    sim_scores = list(enumerate(cosine_sim[idx]))
+    sim_scores = sorted(sim_scores, key=lambda x: x[1], reverse=True)
+    top_indices = [i for i, _ in sim_scores[1:top_n + 1]]
+
+    recommended_titles = filtered_data.iloc[top_indices]['title'].tolist()
+    poster_urls = [fetch_poster(movie) for movie in recommended_titles]
+
+    return recommended_titles, poster_urls
