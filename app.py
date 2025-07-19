@@ -1,26 +1,49 @@
 import streamlit as st
+import pandas as pd
+import ast
+
 from recommender import get_recommendations
 from utils.posters import fetch_poster
-import pandas as pd
 
+# Load the movie dataset
+data = pd.read_csv("data/tmdb_5000_movies.csv")
+
+# Extract all genres from the 'genres' column
+def extract_genres(genres_column):
+    try:
+        genres_list = ast.literal_eval(genres_column)
+        return [g['name'] for g in genres_list if 'name' in g]
+    except:
+        return []
+
+all_genres = sorted(set(
+    genre
+    for genre_list in data['genres']
+    for genre in extract_genres(genre_list)
+))
+
+# Streamlit UI
 st.set_page_config(page_title="Movie Recommender", layout="wide")
 st.title("🎬 Movie Recommendation System")
+st.markdown("Get recommendations based on your favorite movie!")
 
-# Load movie data
-data = pd.read_csv("data/tmdb_5000_movies.csv")
-movies = data['title'].values
+# Genre filter
+genre_filter = st.selectbox("🎭 Filter by Genre (optional):", ["All"] + all_genres)
 
-# User input
-selected_movie = st.selectbox("Select a movie you like:", movies)
-genre_filter = st.selectbox("Filter by genre (optional):", ["All"] + sorted(set(g for gs in data['genres'] for g in eval(gs.replace("'", '"')) if 'name' in g)))
+# Movie list (optionally filtered by genre)
+if genre_filter != "All":
+    filtered_movies = data[data['genres'].apply(lambda g: genre_filter in extract_genres(g))]
+else:
+    filtered_movies = data
 
-if st.button("Recommend"):
-    recommendations = get_recommendations(selected_movie, genre_filter if genre_filter != "All" else None)
-    if recommendations:
-        cols = st.columns(5)
-        for idx, (title, poster_url) in enumerate(recommendations):
-            with cols[idx % 5]:
-                st.image(poster_url, caption=title, use_column_width=True)
-    else:
-        st.error("No recommendations found.")
+movie_list = filtered_movies['title'].sort_values().tolist()
+selected_movie = st.selectbox("🎞️ Choose a movie:", movie_list)
 
+if st.button("🔍 Show Recommendations"):
+    st.markdown("## Recommended Movies:")
+    recommended_titles, poster_urls = get_recommendations(selected_movie, data)
+
+    cols = st.columns(5)
+    for i in range(len(recommended_titles)):
+        with cols[i % 5]:
+            st.image(poster_urls[i], caption=recommended_titles[i], use_column_width=True)
