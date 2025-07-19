@@ -1,49 +1,45 @@
 import streamlit as st
 import pandas as pd
-import ast
-
 from recommender import get_recommendations
-from utils.posters import fetch_poster
+from utils.posters import fetch_poster_url
 
-# Load the movie dataset
+# Load movie data
 data = pd.read_csv("data/tmdb_5000_movies.csv")
 
-# Extract all genres from the 'genres' column
-def extract_genres(genres_column):
+# Parse genres column
+def extract_genres(genre_str):
     try:
-        genres_list = ast.literal_eval(genres_column)
-        return [g['name'] for g in genres_list if 'name' in g]
+        genres = eval(genre_str.replace("null", "None"))
+        return [g['name'] for g in genres if isinstance(g, dict) and 'name' in g]
     except:
         return []
 
-all_genres = sorted(set(
-    genre
-    for genre_list in data['genres']
-    for genre in extract_genres(genre_list)
-))
+data['genres_list'] = data['genres'].apply(extract_genres)
 
-# Streamlit UI
-st.set_page_config(page_title="Movie Recommender", layout="wide")
-st.title("🎬 Movie Recommendation System")
-st.markdown("Get recommendations based on your favorite movie!")
+# Sidebar title
+st.markdown("<h1 style='color:#FFCC00;'>🎬 Movie Recommendation System</h1>", unsafe_allow_html=True)
 
 # Genre filter
-genre_filter = st.selectbox("🎭 Filter by Genre (optional):", ["All"] + all_genres)
+all_genres = sorted(set(g for genre_list in data['genres_list'] for g in genre_list))
+genre_filter = st.selectbox("📂 Filter by genre (optional):", ["All"] + all_genres)
 
-# Movie list (optionally filtered by genre)
+# Filtered movies
 if genre_filter != "All":
-    filtered_movies = data[data['genres'].apply(lambda g: genre_filter in extract_genres(g))]
+    filtered_data = data[data['genres_list'].apply(lambda genres: genre_filter in genres)]
 else:
-    filtered_movies = data
+    filtered_data = data
 
-movie_list = filtered_movies['title'].sort_values().tolist()
-selected_movie = st.selectbox("🎞️ Choose a movie:", movie_list)
+# Movie selection
+movie_list = filtered_data['title'].values
+selected_movie = st.selectbox("🎥 Choose a movie:", movie_list)
 
-if st.button("🔍 Show Recommendations"):
+# Show recommendations button
+if st.button("🎯 Show Recommendations"):
     st.markdown("## Recommended Movies:")
-    recommended_titles, poster_urls = get_recommendations(selected_movie, data)
+    titles, posters = get_recommendations(selected_movie, data)
 
     cols = st.columns(5)
-    for i in range(len(recommended_titles)):
+    for i in range(len(titles)):
         with cols[i % 5]:
-            st.image(poster_urls[i], caption=recommended_titles[i], use_column_width=True)
+            st.markdown(f"**{titles[i]}**")
+            st.image(posters[i], use_container_width=True)
