@@ -242,3 +242,22 @@ elif page == "📊 Movie Analytics":
 st.markdown("---")
 st.markdown("### 🎬 About This App")
 st.write("This enhanced movie recommendation system uses content-based filtering to suggest movies similar to your preferences. Built with Streamlit and powered by the TMDB dataset.")
+
+st.markdown("""
+<style>
+    .footer {
+        font-size: 0.9rem;
+        color: #6c757d;
+        text-align: center;
+        margin-top: 2rem;
+    }
+    .footer a {
+        color: #3498db;
+        text-decoration: none;
+        font-weight: bold;
+    }
+</style>
+<div class="footer">
+    Made with ❤️ by <a href="https://www.linkedin.com/in/aditya-chhikara-9a7453306/" target="_blank">Aditya Chhikara</a>
+</div>
+""", unsafe_allow_html=True)
