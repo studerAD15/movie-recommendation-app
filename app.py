@@ -1,38 +1,43 @@
-from recommender import get_recommendations
-from streamlit_searchbox import st_searchbox
 import streamlit as st
+from recommender import recommend, get_trending_movies
+from utils.posters import fetch_poster
 import pandas as pd
 
-# Load movie data
+# Load movie list
 movies_df = pd.read_csv("data/tmdb_5000_movies.csv")
-movie_titles = movies_df["title"].tolist()
+movie_titles = movies_df['title'].tolist()
 
-# Search function for searchbox
-def search_movies(searchterm: str):
-    return [movie for movie in movie_titles if searchterm.lower() in movie.lower()][:10]
-
-st.set_page_config(page_title="Movie Recommender", page_icon="🎬", layout="centered")
+st.set_page_config(layout="wide")
 st.title("🎬 Movie Recommendation System")
-st.markdown("Search for your favorite movie and discover similar ones!")
 
-# 🔍 Searchbox input
-selected_movie = st_searchbox(
-    search_movies,
-    key="movie_searchbox",
-    placeholder="Type a movie title...",
-    label="Search Movie Title",
-)
+# 🔍 Movie Search with Dropdown Suggestion
+st.markdown("## 🔎 Search by Movie Title")
+selected_movie = st.selectbox("Type to search and select a movie", sorted(movie_titles))
 
-# Show recommendations
-if selected_movie and st.button("🎯 Show Recommendations"):
-    with st.spinner("Fetching recommendations..."):
-        try:
-            recommended_titles, poster_urls = get_recommendations(selected_movie)
-            st.subheader(f"🎞️ Because you watched **{selected_movie}**")
-            for title, poster in zip(recommended_titles, poster_urls):
-                st.markdown(f"**{title}**")
-                st.image(poster, use_container_width=True)
+# Recommendation Block
+if selected_movie:
+    recommended_movies = recommend(selected_movie)
+    if recommended_movies:
+        st.markdown("### 🎯 Recommended Movies")
+        cols = st.columns(5)
+        for idx, (title, poster) in enumerate(recommended_movies):
+            with cols[idx % 5]:
+                if poster:
+                    st.image(poster, caption=title, use_container_width=True)
+                else:
+                    st.markdown(f"**{title}**\n\nNo poster available.")
+    else:
+        st.warning("No recommendations found.")
 
-        except Exception as e:
-            st.error(f"⚠️ Error: {str(e)}")
-            st.error("Sorry, we couldn't find any recommendations for that movie.")
+st.markdown("---")
+st.markdown("## 🔥 Trending Now")
+
+# Trending Movies
+trending = get_trending_movies()
+cols = st.columns(5)
+for idx, (title, poster) in enumerate(trending):
+    with cols[idx % 5]:
+        if poster:
+            st.image(poster, caption=title, use_container_width=True)
+        else:
+            st.markdown(f"**{title}**\n\nNo poster available.")
