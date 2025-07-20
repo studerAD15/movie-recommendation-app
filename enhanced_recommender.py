@@ -2,11 +2,10 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
-from utils.posters import fetch_poster
 import requests
 import ast
 from fuzzywuzzy import fuzz, process
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Optional
 import streamlit as st
 
 class ImprovedRecommender:
@@ -15,6 +14,47 @@ class ImprovedRecommender:
         self.similarity_matrix = None
         self.movie_features = None
         self.load_and_process_data()
+    
+    # Integrated poster fetching methods
+    def fetch_poster(self, movie_title: str) -> Optional[str]:
+        """Fetch movie poster URL with multiple strategies"""
+        # Strategy 1: Check if CSV has poster_path column
+        if hasattr(self, 'movies_df') and self.movies_df is not None:
+            movie_row = self.movies_df[self.movies_df['title'].str.lower() == movie_title.lower()]
+            if not movie_row.empty:
+                # Check for poster_path column
+                if 'poster_path' in movie_row.columns:
+                    poster_path = movie_row.iloc[0].get('poster_path')
+                    if poster_path and isinstance(poster_path, str) and poster_path.strip():
+                        if poster_path.startswith('/'):
+                            return f"https://image.tmdb.org/t/p/w500{poster_path}"
+                        elif poster_path.startswith('http'):
+                            return poster_path
+        
+        # Strategy 2: Use TMDB API (add your API key here)
+        TMDB_API_KEY = "your_tmdb_api_key_here"  # ⚠️ REPLACE WITH YOUR API KEY
+        
+        if TMDB_API_KEY and TMDB_API_KEY != "your_tmdb_api_key_here":
+            try:
+                search_url = "https://api.themoviedb.org/3/search/movie"
+                params = {
+                    'api_key': TMDB_API_KEY,
+                    'query': movie_title,
+                    'page': 1
+                }
+                
+                response = requests.get(search_url, params=params, timeout=5)
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('results'):
+                        poster_path = data['results'][0].get('poster_path')
+                        if poster_path:
+                            return f"https://image.tmdb.org/t/p/w500{poster_path}"
+            except Exception as e:
+                print(f"API error for {movie_title}: {e}")
+        
+        # Strategy 3: Return None (will show fallback UI)
+        return None
     
     @st.cache_data(ttl=3600)
     def load_and_process_data(_self):
@@ -136,7 +176,7 @@ class ImprovedRecommender:
         recommendations = []
         for idx, score in sim_scores:
             title = self.movies_df.iloc[idx]['title']
-            poster = fetch_poster(title)
+            poster = self.fetch_poster(title)
             recommendations.append((title, poster, score))
         
         return recommendations
@@ -155,7 +195,7 @@ class ImprovedRecommender:
         
         recommendations = []
         for _, row in selected_movies.iterrows():
-            poster = fetch_poster(row['title'])
+            poster = self.fetch_poster(row['title'])
             recommendations.append((row['title'], poster))
         
         return recommendations
@@ -178,7 +218,7 @@ class ImprovedRecommender:
         
         recommendations = []
         for _, row in top_trending.iterrows():
-            poster = fetch_poster(row['title'])
+            poster = self.fetch_poster(row['title'])
             recommendations.append((row['title'], poster))
         
         return recommendations
@@ -203,7 +243,7 @@ class ImprovedRecommender:
             'budget': movie.get('budget', 'N/A'),
             'revenue': movie.get('revenue', 'N/A'),
             'genres': movie.get('genres_clean', []),
-            'poster': fetch_poster(movie.get('title', ''))
+            'poster': self.fetch_poster(movie.get('title', ''))
         }
     
     def get_top_rated_movies(self, limit: int = 10) -> List[Tuple[str, str, float]]:
@@ -220,7 +260,7 @@ class ImprovedRecommender:
         
         recommendations = []
         for _, row in top_movies.iterrows():
-            poster = fetch_poster(row['title'])
+            poster = self.fetch_poster(row['title'])
             recommendations.append((row['title'], poster, row['vote_average']))
         
         return recommendations
