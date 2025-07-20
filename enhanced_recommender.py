@@ -1,8 +1,8 @@
+import requests
 import pandas as pd
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.feature_extraction.text import TfidfVectorizer
-import requests
 import ast
 from fuzzywuzzy import fuzz, process
 from typing import List, Tuple, Dict, Any, Optional
@@ -15,58 +15,72 @@ class ImprovedRecommender:
         self.movie_features = None
         self.load_and_process_data()
     
-    @st.cache_data(ttl=3600)
-    @st.cache_data(ttl=3600)
-    def fetch_poster(_self, movie_title: str) -> Optional[str]:
-        """Fetch movie poster URL with multiple strategies"""
+
+    def fetch_poster(self, movie_title: str) -> Optional[str]:
+        """Fetch movie poster URL with multiple strategies and debugging"""
         if not movie_title:
             return None
         
+        print(f"🔍 Fetching poster for: {movie_title}")  # Debug
+        
         # Strategy 1: Check CSV for poster_path
-        try:
-            movie_row = _self.movies_df[_self.movies_df['title'].str.lower() == movie_title.lower()]
+            try:
+            movie_row = self.movies_df[self.movies_df['title'].str.lower() == movie_title.lower()]
             if not movie_row.empty and 'poster_path' in movie_row.columns:
                 poster_path = movie_row.iloc[0].get('poster_path')
-                if poster_path and isinstance(poster_path, str) and poster_path.strip():
+                print(f"📁 CSV poster_path: {poster_path}")  # Debug
+                if poster_path and isinstance(poster_path, str) and poster_path.strip() and poster_path != 'N/A':
                     if poster_path.startswith('/'):
-                        return f"https://image.tmdb.org/t/p/w500{poster_path}"
+                        url = f"https://image.tmdb.org/t/p/w500{poster_path}"
+                        print(f"✅ CSV poster URL: {url}")  # Debug
+                        return url
                     elif poster_path.startswith('http'):
+                        print(f"✅ Direct CSV URL: {poster_path}")  # Debug
                         return poster_path
-        except Exception:
-            pass
+            except Exception as e:
+            print(f"❌ CSV error: {e}")
         
-        # Strategy 2: Use OMDb API (free, no registration needed)
-        try:
+        # Strategy 2: Use OMDb API
+            try:
             omdb_url = "http://www.omdbapi.com/"
             params = {
                 "t": movie_title,
-                "apikey": "562c0dc8"  # Free API key
+                "apikey": "562c0dc8"
             }
-            response = requests.get(omdb_url, params=params, timeout=5)
-            if response.status_code == 200:
+            print(f"🌐 Trying OMDb API...")  # Debug
+            response = requests.get(omdb_url, params=params, timeout=10)
+                if response.status_code == 200:
                 data = response.json()
-                if data.get("Response") == "True" and data.get("Poster") != "N/A":
-                    return data["Poster"]
-        except Exception as e:
-            print(f"OMDb API error for {movie_title}: {e}")
+                print(f"📡 OMDb response: {data.get('Response', 'No Response')}")  # Debug
+                    if data.get("Response") == "True" and data.get("Poster") and data.get("Poster") != "N/A":
+                    poster_url = data["Poster"]
+                    print(f"✅ OMDb poster: {poster_url}")  # Debug
+                    return poster_url
+            except Exception as e:
+            print(f"❌ OMDb error: {e}")
         
-        # Strategy 3: Try alternative poster sources
-        try:
-            # Clean movie title for search
-            clean_title = movie_title.replace(" ", "+").replace(":", "").replace("'", "")
+        # Strategy 3: Try TMDb API with a working key
+            try:
+                import urllib.parse
+                encoded_title = urllib.parse.quote(movie_title)
+                tmdb_url = f"https://api.themoviedb.org/3/search/movie?api_key=8265bd1679663a7ea12ac168da84d2e8&query={encoded_title}"
+                print(f"🎬 Trying TMDb API...")  # Debug
             
-            # Try MovieDB poster (backup)
-            tmdb_search_url = f"https://api.themoviedb.org/3/search/movie?api_key=8265bd1679663a7ea12ac168da84d2e8&query={clean_title}"
-            response = requests.get(tmdb_search_url, timeout=5)
-            if response.status_code == 200:
+            response = requests.get(tmdb_url, timeout=10)
+                if response.status_code == 200:
                 data = response.json()
-                if data.get('results'):
-                    poster_path = data['results'][0].get('poster_path')
+                results = data.get('results', [])
+                print(f"🎭 TMDb results: {len(results)} found")  # Debug
+                if results:
+                    poster_path = results[0].get('poster_path')
                     if poster_path:
-                        return f"https://image.tmdb.org/t/p/w500{poster_path}"
-        except Exception as e:
-            print(f"TMDb API error for {movie_title}: {e}")
+                        url = f"https://image.tmdb.org/t/p/w500{poster_path}"
+                        print(f"✅ TMDb poster: {url}")  # Debug
+                        return url
+            except Exception as e:
+            print(f"❌ TMDb error: {e}")
         
+        print(f"❌ No poster found for: {movie_title}")  # Debug
         return None
 
     

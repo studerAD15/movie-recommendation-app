@@ -21,6 +21,9 @@ recommender = load_recommender()
 def safe_display_image(poster_url, title, caption=None, use_container_width=True):
     """Safely display movie poster with error handling and fallbacks"""
     
+    print(f"🖼️ Displaying image for: {title}")  # Debug
+    print(f"🔗 Poster URL: {poster_url}")  # Debug
+    
     # Clean and validate the poster URL
     if poster_url and isinstance(poster_url, str):
         poster_url = poster_url.strip()
@@ -32,12 +35,13 @@ def safe_display_image(poster_url, title, caption=None, use_container_width=True
         # Check if it's a valid URL and not a placeholder
         if poster_url and "placeholder" not in poster_url.lower() and poster_url.startswith(('http://', 'https://')):
             try:
+                print(f"✅ Attempting to display: {poster_url[:50]}...")  # Debug
                 st.image(poster_url, caption=caption or title, use_container_width=use_container_width)
                 return True
             except Exception as e:
-                # If image fails to load, show fallback
-                pass
+                print(f"❌ Image display error: {e}")  # Debug
     
+    print(f"🎬 Showing fallback for: {title}")  # Debug
     # Fallback: Show a styled movie card instead of poster
     st.markdown(f"""
     <div style="
