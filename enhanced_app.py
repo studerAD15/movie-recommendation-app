@@ -2,6 +2,7 @@ import streamlit as st
 import plotly.express as px
 from enhanced_recommender import ImprovedRecommender
 import pandas as pd
+
 # Page config
 st.set_page_config(
     page_title="🎬 Enhanced Movie Recommendations", 
@@ -16,7 +17,23 @@ def load_recommender():
 
 recommender = load_recommender()
 
-
+# Helper function to safely display images
+def safe_display_image(poster_url, title, caption=None, use_container_width=True):
+    """Safely display movie poster with error handling"""
+    try:
+        if poster_url and isinstance(poster_url, str) and poster_url.strip() and "placeholder" not in poster_url.lower():
+            st.image(poster_url, caption=caption or title, use_container_width=use_container_width)
+            return True
+        else:
+            # Display fallback when no valid poster
+            st.markdown(f"### 🎬 {title}")
+            st.markdown("*No poster available*")
+            return False
+    except Exception as e:
+        # Handle any image loading errors
+        st.markdown(f"### 🎬 {title}")
+        st.markdown("*Could not load poster*")
+        return False
 
 # Custom CSS
 st.markdown("""
@@ -113,11 +130,8 @@ if page == "🏠 Home":
             cols = st.columns(4)
             for idx, (title, poster, similarity) in enumerate(recommendations):
                 with cols[idx % 4]:
-                    if poster and "placeholder" not in poster:
-                        st.image(poster, caption=title, use_container_width=True)
-                    else:
-                        st.markdown(f"### {title}")
-                        st.write("🎬 No poster available")
+                    # Use safe image display function
+                    safe_display_image(poster, title)
                     
                     # Show similarity score
                     st.markdown(f'<div class="similarity-score">Match: {similarity:.1%}</div>', 
@@ -139,7 +153,7 @@ if page == "🏠 Home":
         col1, col2 = st.columns([1, 2])
         with col1:
             if details.get('poster'):
-                st.image(details['poster'], width=300)
+                safe_display_image(details['poster'], details.get('title', 'Unknown'))
         
         with col2:
             st.write(f"**Title:** {details.get('title', 'N/A')}")
@@ -157,10 +171,7 @@ if page == "🏠 Home":
     cols = st.columns(4)
     for idx, (title, poster) in enumerate(trending):
         with cols[idx % 4]:
-            if poster and "placeholder" not in poster:
-                st.image(poster, caption=title, use_container_width=True)
-            else:
-                st.markdown(f"### {title}")
+            safe_display_image(poster, title)
 
 elif page == "🎭 Browse by Genre":
     st.markdown('<h2 class="sub-header">🎭 Browse Movies by Genre</h2>', unsafe_allow_html=True)
@@ -176,10 +187,7 @@ elif page == "🎭 Browse by Genre":
         
         for idx, (title, poster) in enumerate(genre_movies):
             with cols[idx % 4]:
-                if poster and "placeholder" not in poster:
-                    st.image(poster, caption=title, use_container_width=True)
-                else:
-                    st.markdown(f"### {title}")
+                safe_display_image(poster, title)
 
 elif page == "⭐ Top Rated":
     st.markdown('<h2 class="sub-header">⭐ Top Rated Movies</h2>', unsafe_allow_html=True)
@@ -189,11 +197,7 @@ elif page == "⭐ Top Rated":
     cols = st.columns(4)
     for idx, (title, poster, rating) in enumerate(top_movies):
         with cols[idx % 4]:
-            if poster and "placeholder" not in poster:
-                st.image(poster, caption=f"{title} ⭐{rating}/10", use_container_width=True)
-            else:
-                st.markdown(f"### {title}")
-                st.write(f"⭐ {rating}/10")
+            safe_display_image(poster, title, caption=f"{title} ⭐{rating}/10")
 
 elif page == "📊 Movie Analytics":
     st.markdown('<h2 class="sub-header">📊 Movie Analytics</h2>', unsafe_allow_html=True)
