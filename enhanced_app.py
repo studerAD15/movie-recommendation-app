@@ -2,6 +2,12 @@ import streamlit as st
 import plotly.express as px
 from enhanced_recommender import ImprovedRecommender
 import pandas as pd
+# Page config
+st.set_page_config(
+    page_title="🎬 Enhanced Movie Recommendations", 
+    layout="wide",
+    page_icon="🎬"
+)
 
 # Initialize the improved recommender
 @st.cache_resource
@@ -10,12 +16,7 @@ def load_recommender():
 
 recommender = load_recommender()
 
-# Page config
-st.set_page_config(
-    page_title="🎬 Enhanced Movie Recommendations", 
-    layout="wide",
-    page_icon="🎬"
-)
+
 
 # Custom CSS
 st.markdown("""
