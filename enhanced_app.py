@@ -12,7 +12,7 @@ recommender = load_recommender()
 
 # Page config
 st.set_page_config(
-page_title="🎬 Enhanced Movie Recommendations",
+page_title="🎬 Enhanced Movie Recommendations", 
 layout="wide",
 page_icon="🎬"
 )
@@ -20,38 +20,38 @@ page_icon="🎬"
 # Custom CSS
 st.markdown("""
 <style>
-.main-header {
-font-size: 3rem;
-font-weight: bold;
-text-align: center;
-color: #e74c3c;
-margin-bottom: 2rem;
-}
-.sub-header {
-font-size: 1.8rem;
-color: #2c3e50;
-margin: 1.5rem 0;
-border-left: 4px solid #3498db;
-padding-left: 1rem;
-}
-.movie-stats {
-background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-padding: 1rem;
-border-radius: 10px;
-color: white;
-text-align: center;
-margin: 0.5rem;
-}
-.similarity-score {
-background: rgba(46, 204, 113, 0.1);
-padding: 0.3rem 0.6rem;
-border-radius: 15px;
-font-size: 0.85rem;
-color: #27ae60;
-font-weight: bold;
-display: inline-block;
-margin-top: 0.5rem;
-}
+   .main-header {
+       font-size: 3rem;
+       font-weight: bold;
+       text-align: center;
+       color: #e74c3c;
+       margin-bottom: 2rem;
+   }
+   .sub-header {
+       font-size: 1.8rem;
+       color: #2c3e50;
+       margin: 1.5rem 0;
+       border-left: 4px solid #3498db;
+       padding-left: 1rem;
+   }
+   .movie-stats {
+       background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+       padding: 1rem;
+       border-radius: 10px;
+       color: white;
+       text-align: center;
+       margin: 0.5rem;
+   }
+   .similarity-score {
+       background: rgba(46, 204, 113, 0.1);
+       padding: 0.3rem 0.6rem;
+       border-radius: 15px;
+       font-size: 0.85rem;
+       color: #27ae60;
+       font-weight: bold;
+       display: inline-block;
+       margin-top: 0.5rem;
+   }
 </style>
 """, unsafe_allow_html=True)
 
@@ -61,9 +61,9 @@ st.markdown('<h1 class="main-header">🎬 Enhanced Movie Recommendation System</
 # Sidebar for navigation
 st.sidebar.title("🎯 Navigation")
 page = st.sidebar.selectbox("Choose a page:", [
-"🏠 Home",
-"🔍 Smart Search",
-"🎭 Browse by Genre",
+"🏠 Home", 
+"🔍 Smart Search", 
+"🎭 Browse by Genre", 
 "📊 Movie Analytics",
 "⭐ Top Rated",
 "🔥 Trending"
@@ -119,7 +119,7 @@ st.markdown(f"### {title}")
 st.write("🎬 No poster available")
 
 # Show similarity score
-st.markdown(f'<div class="similarity-score">Match: {similarity:.1%}</div>',
+st.markdown(f'<div class="similarity-score">Match: {similarity:.1%}</div>', 
 unsafe_allow_html=True)
 
 # Add movie details button
@@ -203,20 +203,20 @@ df = recommender.movies_df
 col1, col2, col3 = st.columns(3)
 
 with col1:
-st.markdown('<div class="movie-stats"><h3>Total Movies</h3><h2>' +
+st.markdown('<div class="movie-stats"><h3>Total Movies</h3><h2>' + 
 f'{len(df):,}</h2></div>', unsafe_allow_html=True)
 
 with col2:
 if 'vote_average' in df.columns:
 avg_rating = df['vote_average'].mean()
-st.markdown('<div class="movie-stats"><h3>Avg Rating</h3><h2>' +
+st.markdown('<div class="movie-stats"><h3>Avg Rating</h3><h2>' + 
 f'{avg_rating:.1f}/10</h2></div>', unsafe_allow_html=True)
 
 with col3:
 if 'release_date' in df.columns:
 latest_year = pd.to_datetime(df['release_date'], errors='coerce').dt.year.max()
-st.markdown('<div class="movie-stats"><h3>Latest Movie</h3><h2>' +
-f'{int(latest_year) if not pd.isna(latest_year) else "N/A"}</h2></div>',
+st.markdown('<div class="movie-stats"><h3>Latest Movie</h3><h2>' + 
+f'{int(latest_year) if not pd.isna(latest_year) else "N/A"}</h2></div>', 
 unsafe_allow_html=True)
 
 # Genre distribution
@@ -227,40 +227,38 @@ for genres in df['genres_clean']:
 all_genres.extend(genres)
 
 genre_counts = pd.Series(all_genres).value_counts().head(10)
-fig = px.bar(x=genre_counts.index, y=genre_counts.values,
+fig = px.bar(x=genre_counts.index, y=genre_counts.values, 
 title="Top 10 Movie Genres")
 st.plotly_chart(fig, use_container_width=True)
 
 # Rating distribution
 if 'vote_average' in df.columns:
 st.markdown("### ⭐ Rating Distribution")
-fig = px.histogram(df, x='vote_average', nbins=20,
+fig = px.histogram(df, x='vote_average', nbins=20, 
 title="Movie Rating Distribution")
 st.plotly_chart(fig, use_container_width=True)
 
 # Footer
 st.markdown("---")
 st.markdown("### 🎬 About This App")
+
 st.write("This enhanced movie recommendation system uses content-based filtering to suggest movies similar to your preferences. Built with Streamlit and powered by the TMDB dataset.")
-posters.py
-import requests
 
-
-# Fetches poster from OMDb API using the movie title
-def fetch_poster(movie_title):
-    api_key = "562c0dc8"  # Your OMDb API key
-    url = f"http://www.omdbapi.com/?t={movie_title}&apikey={api_key}"
-   
-    try:
-        response = requests.get(url)
-        data = response.json()
-
-
-        if data.get("Response") == "True" and data.get("Poster") and data["Poster"] != "N/A":
-            return data["Poster"]
-        else:
-            return "https://via.placeholder.com/300x450?text=No+Image"
-   
-    except Exception as e:
-        print(f"Error fetching poster: {e}")
-        return "https://via.placeholder.com/300x450?text=Error"
+st.markdown("""
+<style>
+    .footer {
+        font-size: 0.9rem;
+        color: #6c757d;
+        text-align: center;
+        margin-top: 2rem;
+    }
+    .footer a {
+        color: #3498db;
+        text-decoration: none;
+        font-weight: bold;
+    }
+</style>
+<div class="footer">
+    Made with ❤️ by <a href="https://www.linkedin.com/in/aditya-chhikara-9a7453306/" target="_blank">Aditya Chhikara</a>
+</div>
+""", unsafe_allow_html=True)
