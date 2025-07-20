@@ -19,21 +19,57 @@ recommender = load_recommender()
 
 # Helper function to safely display images
 def safe_display_image(poster_url, title, caption=None, use_container_width=True):
-    """Safely display movie poster with error handling"""
-    try:
-        if poster_url and isinstance(poster_url, str) and poster_url.strip() and "placeholder" not in poster_url.lower():
-            st.image(poster_url, caption=caption or title, use_container_width=use_container_width)
-            return True
-        else:
-            # Display fallback when no valid poster
-            st.markdown(f"### 🎬 {title}")
-            st.markdown("*No poster available*")
-            return False
-    except Exception as e:
-        # Handle any image loading errors
-        st.markdown(f"### 🎬 {title}")
-        st.markdown("*Could not load poster*")
-        return False
+    """Safely display movie poster with error handling and fallbacks"""
+    
+    # Clean and validate the poster URL
+    if poster_url and isinstance(poster_url, str):
+        poster_url = poster_url.strip()
+        
+        # Handle TMDB poster URLs - ensure they have the full URL
+        if poster_url.startswith('/'):
+            poster_url = f"https://image.tmdb.org/t/p/w500{poster_url}"
+        
+        # Check if it's a valid URL and not a placeholder
+        if poster_url and "placeholder" not in poster_url.lower() and poster_url.startswith(('http://', 'https://')):
+            try:
+                st.image(poster_url, caption=caption or title, use_container_width=use_container_width)
+                return True
+            except Exception as e:
+                # If image fails to load, show fallback
+                pass
+    
+    # Fallback: Show a styled movie card instead of poster
+    st.markdown(f"""
+    <div style="
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 15px;
+        padding: 40px 20px;
+        text-align: center;
+        color: white;
+        box-shadow: 0 8px 32px rgba(102, 126, 234, 0.3);
+        margin-bottom: 10px;
+        min-height: 300px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    ">
+        <div style="font-size: 48px; margin-bottom: 15px;">🎬</div>
+        <div style="font-size: 18px; font-weight: bold; line-height: 1.4;">{title}</div>
+        {f'<div style="font-size: 14px; margin-top: 10px; opacity: 0.9;">{caption.split("⭐")[1] if caption and "⭐" in caption else ""}</div>' if caption and "⭐" in caption else ""}
+    </div>
+    """, unsafe_allow_html=True)
+    return False
+
+# Function to create movie poster URL from TMDB path
+def get_poster_url(poster_path, size="w500"):
+    """Convert TMDB poster path to full URL"""
+    if not poster_path:
+        return None
+    if poster_path.startswith('http'):
+        return poster_path
+    if poster_path.startswith('/'):
+        return f"https://image.tmdb.org/t/p/{size}{poster_path}"
+    return f"https://image.tmdb.org/t/p/{size}/{poster_path}"
 
 # Custom CSS
 st.markdown("""
@@ -130,8 +166,9 @@ if page == "🏠 Home":
             cols = st.columns(4)
             for idx, (title, poster, similarity) in enumerate(recommendations):
                 with cols[idx % 4]:
-                    # Use safe image display function
-                    safe_display_image(poster, title)
+                    # Process poster URL and use safe image display function
+                    poster_url = get_poster_url(poster)
+                    safe_display_image(poster_url, title)
                     
                     # Show similarity score
                     st.markdown(f'<div class="similarity-score">Match: {similarity:.1%}</div>', 
@@ -153,7 +190,8 @@ if page == "🏠 Home":
         col1, col2 = st.columns([1, 2])
         with col1:
             if details.get('poster'):
-                safe_display_image(details['poster'], details.get('title', 'Unknown'))
+                poster_url = get_poster_url(details['poster'])
+                safe_display_image(poster_url, details.get('title', 'Unknown'))
         
         with col2:
             st.write(f"**Title:** {details.get('title', 'N/A')}")
@@ -171,7 +209,8 @@ if page == "🏠 Home":
     cols = st.columns(4)
     for idx, (title, poster) in enumerate(trending):
         with cols[idx % 4]:
-            safe_display_image(poster, title)
+            poster_url = get_poster_url(poster)
+            safe_display_image(poster_url, title)
 
 elif page == "🎭 Browse by Genre":
     st.markdown('<h2 class="sub-header">🎭 Browse Movies by Genre</h2>', unsafe_allow_html=True)
@@ -187,7 +226,8 @@ elif page == "🎭 Browse by Genre":
         
         for idx, (title, poster) in enumerate(genre_movies):
             with cols[idx % 4]:
-                safe_display_image(poster, title)
+                poster_url = get_poster_url(poster)
+                safe_display_image(poster_url, title)
 
 elif page == "⭐ Top Rated":
     st.markdown('<h2 class="sub-header">⭐ Top Rated Movies</h2>', unsafe_allow_html=True)
@@ -197,7 +237,8 @@ elif page == "⭐ Top Rated":
     cols = st.columns(4)
     for idx, (title, poster, rating) in enumerate(top_movies):
         with cols[idx % 4]:
-            safe_display_image(poster, title, caption=f"{title} ⭐{rating}/10")
+            poster_url = get_poster_url(poster)
+            safe_display_image(poster_url, title, caption=f"{title} ⭐{rating}/10")
 
 elif page == "📊 Movie Analytics":
     st.markdown('<h2 class="sub-header">📊 Movie Analytics</h2>', unsafe_allow_html=True)
