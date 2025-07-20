@@ -7,4 +7,4 @@ Pillow==11.3.0
 fuzzywuzzy==0.18.0
 python-Levenshtein==0.25.0
 plotly==6.2.0
-streamlit-searchbox==0.3.0
+streamlit-searchbox==0.1.22
